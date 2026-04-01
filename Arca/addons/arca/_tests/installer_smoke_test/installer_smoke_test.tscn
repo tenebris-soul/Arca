@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cwogboexockmp"]
+
+[ext_resource type="Script" uid="uid://jor68a64vaty" path="res://addons/arca/_tests/installer_smoke_test/installer_smoke_test.gd" id="1_t17av"]
+
+[node name="InstallerSmokeTest" type="Node" unique_id=1438243147]
+script = ExtResource("1_t17av")

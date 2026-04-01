@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dtlb255ajrrwj"]
+
+[ext_resource type="Script" uid="uid://dayj5tvkolrok" path="res://addons/arca/_tests/container_smoke_test/container_smoke_test.gd" id="1_1tbql"]
+
+[node name="Node2D" type="Node2D" unique_id=1249945999]
+
+[node name="Node2D" type="Node2D" parent="." unique_id=1258213300]
+script = ExtResource("1_1tbql")

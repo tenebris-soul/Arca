@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/arca/_tests/node_context_smoke_test/node_context_smoke_test.gd" id="1_6ev7j"]
+[ext_resource type="Script" path="res://addons/arca/_tests/node_context_smoke_test/parent_scoped_context.gd" id="2_aytmr"]
+[ext_resource type="Script" path="res://addons/arca/_tests/node_context_smoke_test/inherited_child_context.gd" id="3_12q2m"]
+[ext_resource type="Script" path="res://addons/arca/_tests/node_context_smoke_test/scoped_child_context.gd" id="4_g24ul"]
+
+[node name="NodeContextSmokeTest" type="Node"]
+script = ExtResource("1_6ev7j")
+
+[node name="ParentScopedContext" type="Node" parent="."]
+script = ExtResource("2_aytmr")
+
+[node name="InheritedChildContext" type="Node" parent="ParentScopedContext"]
+script = ExtResource("3_12q2m")
+
+[node name="ScopedChildContext" type="Node" parent="ParentScopedContext"]
+script = ExtResource("4_g24ul")
