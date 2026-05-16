@@ -42,14 +42,14 @@ func resolve(concrete: Script) -> Variant:
 
 	return instance
 
-func instantiate(concrete: Script) -> Variant:
+func instantiate(concrete: Script, extra_args: Array) -> Variant:
 	var deps := []
 
 	if concrete.has_method("get_dependencies"):
 		for dep in concrete.get_dependencies():
 			deps.append(resolve(dep))
 
-	return concrete.new.callv(deps)
+	return concrete.new.callv(deps + extra_args)
 
 func dispose() -> void:
 	for instance in _instances.duplicate():

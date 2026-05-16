@@ -33,4 +33,4 @@ func _install_global_installers() -> void:
 			push_error("ArcaProjectContext: Global installer must extend ArcaInstaller: %s" % installer_path)
 			continue
 
-		installer.install(container)
+		installer.install(container, self)

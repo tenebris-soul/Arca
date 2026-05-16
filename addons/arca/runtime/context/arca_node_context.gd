@@ -71,4 +71,4 @@ func _install_when_needed() -> void:
 			push_error("ArcaNodeContext: Installer must extend ArcaInstaller: %s" % path)
 			continue
 
-		installer.install(container)
+		installer.install(container, self)

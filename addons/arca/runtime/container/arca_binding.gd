@@ -6,6 +6,7 @@ const Lifetimes = ArcaBindingLifetimes.Lifetime
 var _concrete: Script
 var _factory: Callable
 var _lifetime: Lifetimes
+var _args: Array = []
 var _instance: Variant
 var _has_cached_instance := false
 
@@ -17,6 +18,9 @@ func set_lifetime(lifetime: Lifetimes) -> void:
 
 func set_factory(factory: Callable) -> void:
     _factory = factory
+
+func set_args(args) -> void:
+    _args = args
                 
 func get_instance(container: ArcaContainer) -> Variant:
     match _lifetime:
@@ -45,4 +49,4 @@ func _create(container: ArcaContainer) -> Variant:
         push_error("ArcaBinding: Factory must accept 0 or 1 argument.")
         return null
 
-    return container.instantiate(_concrete)
+    return container.instantiate(_concrete, _args)
