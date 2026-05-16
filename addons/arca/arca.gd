@@ -1,8 +1,8 @@
 @tool
 extends EditorPlugin
 
-const AUTOLOAD_PROJECT_CONTEXT_NAME: String = "ArcaProjectContext"
-const AUTOLOAD_PROJECT_CONTEXT_PATH: String = "res://addons/arca/context/arca_project_context.gd"
+const AUTOLOAD_PROJECT_CONTEXT_NAME: String = "ArcaProjectContextNode"
+const AUTOLOAD_PROJECT_CONTEXT_PATH: String = "res://addons/arca/runtime/context/arca_project_context.gd"
 
 const INSTALLERS_SETTING := "arca/project/global_installers"
 const INSTALLERS_DEFAULT := []
