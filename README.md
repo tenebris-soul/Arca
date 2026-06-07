@@ -8,6 +8,7 @@ In short:
 - contexts decide where services live;
 - `resolve()` creates or returns objects;
 - `get_dependencies()` describes constructor dependencies;
+- `inject()` passes dependencies into an already existing object;
 - `with_arguments(...)` adds manual constructor arguments;
 - `non_lazy()` forces creation during installer setup;
 - `tick`, `physics_tick`, and `dispose` are handled by the lifecycle runner.
@@ -225,6 +226,77 @@ var save = container.resolve(SaveService)
 var player_service = PlayerService.new(inventory, save)
 ```
 
+#### Inject в уже созданный объект
+
+`resolve()` хорош, когда объект создает сам контейнер. Но в Godot много объектов уже живут в сцене: `Node`, UI-контролы, игрок, камера, зоны, спавнеры. Их не надо пересоздавать через DI-контейнер. Для этого есть:
+
+```gdscript
+container.inject(instance)
+```
+
+`inject()` берет уже существующий объект, смотрит его script и, если там есть `get_inject_dependencies()`, резолвит эти зависимости из контейнера.
+
+Потом контейнер вызывает у объекта:
+
+```gdscript
+inject_dependencies(...)
+```
+
+Пример:
+
+```gdscript
+extends CharacterBody3D
+class_name Player
+
+var motion_service: PlayerMotionService
+var inventory_service: InventoryService
+
+static func get_inject_dependencies() -> Array:
+	return [PlayerMotionService, InventoryService]
+
+func inject_dependencies(
+	motion: PlayerMotionService,
+	inventory: InventoryService
+) -> void:
+	motion_service = motion
+	inventory_service = inventory
+```
+
+Вызов:
+
+```gdscript
+container.inject(player)
+```
+
+Внутри это примерно то же самое, что:
+
+```gdscript
+var motion = container.resolve(PlayerMotionService)
+var inventory = container.resolve(InventoryService)
+
+player.inject_dependencies(motion, inventory)
+```
+
+Порядок в `get_inject_dependencies()` ОЧЕНЬ ВАЖЕН. Он должен совпадать с порядком аргументов в `inject_dependencies(...)`.
+
+Если объекту нужны еще и ручные аргументы, их можно передать вторым параметром:
+
+```gdscript
+container.inject(player, [spawn_point, team_id])
+```
+
+Тогда итоговый вызов будет таким:
+
+```gdscript
+player.inject_dependencies(motion, inventory, spawn_point, team_id)
+```
+
+Сначала идут зависимости из `get_inject_dependencies()`, потом значения из `extra_args`.
+
+Еще один важный момент: после `inject()` объект попадает в lifecycle контейнера. Если у него есть `tick(delta)`, `physics_tick(delta)` или `dispose()`, они будут обрабатываться так же, как у объектов, созданных через `resolve()`.
+
+Если у script есть `get_inject_dependencies()`, но у объекта нет метода `inject_dependencies(...)`, Arca выдаст ошибку. Это специально: контейнер понял, что зависимости нужны, но не знает, куда их положить.
+
 #### with_arguments(...)
 
 `with_arguments(...)` нужен, когда часть аргументов нельзя или не хочется резолвить из контейнера. Например, это может быть node из сцены, export-поле context-а, конфиг, число, строка.
@@ -313,6 +385,47 @@ container.bind(PlayerMotionService)\
 ```
 
 Так проще читать: сначала что биндим, потом с какими аргументами, потом lifetime, потом "создай сразу".
+
+#### from_instance()
+
+`from_instance()` нужен, когда объект уже существует, и ты хочешь положить именно его в контейнер.
+
+Частый случай - node или сервис, который создается не контейнером, а сценой:
+
+```gdscript
+func install(container: ArcaContainer, ctx) -> void:
+	var player_context = ctx as PlayerContext
+
+	container.bind(PlayerCameraService).from_instance(player_context.camera_service)
+```
+
+После этого:
+
+```gdscript
+var camera_service = container.resolve(PlayerCameraService)
+```
+
+вернет тот же самый instance, который был передан в `from_instance()`.
+
+`from_instance()` всегда ведет себя как singleton. Контейнер не будет создавать новый объект.
+
+Можно биндинть child instance как base script:
+
+```gdscript
+var child_service = ChildService.new()
+
+container.bind(BaseService).from_instance(child_service)
+```
+
+Это сработает, если `ChildService` наследуется от `BaseService`.
+
+Если instance не относится к script-у, который ты биндишь, Arca выдаст ошибку:
+
+```gdscript
+container.bind(PlayerService).from_instance(InventoryService.new())
+```
+
+`from_instance()` нельзя смешивать с `with_arguments(...)`, `as_single(...)`, `as_transient(...)` или factory. Instance уже готов, поэтому arguments и factory тут не участвуют.
 
 #### Factory
 
@@ -591,6 +704,77 @@ var save = container.resolve(SaveService)
 var player_service = PlayerService.new(inventory, save)
 ```
 
+#### Inject Into An Existing Object
+
+`resolve()` is for objects created by the container. In Godot, many objects already exist in the scene: `Node`s, UI controls, the player, cameras, areas, spawners. You usually do not want to recreate them through the DI container. For that case, use:
+
+```gdscript
+container.inject(instance)
+```
+
+`inject()` takes an existing object, reads its script, and if the script has `get_inject_dependencies()`, resolves those dependencies from the container.
+
+Then the container calls:
+
+```gdscript
+inject_dependencies(...)
+```
+
+Example:
+
+```gdscript
+extends CharacterBody3D
+class_name Player
+
+var motion_service: PlayerMotionService
+var inventory_service: InventoryService
+
+static func get_inject_dependencies() -> Array:
+	return [PlayerMotionService, InventoryService]
+
+func inject_dependencies(
+	motion: PlayerMotionService,
+	inventory: InventoryService
+) -> void:
+	motion_service = motion
+	inventory_service = inventory
+```
+
+Call it like this:
+
+```gdscript
+container.inject(player)
+```
+
+Internally, this is roughly the same as:
+
+```gdscript
+var motion = container.resolve(PlayerMotionService)
+var inventory = container.resolve(InventoryService)
+
+player.inject_dependencies(motion, inventory)
+```
+
+The order in `get_inject_dependencies()` is VERY IMPORTANT. It must match the argument order in `inject_dependencies(...)`.
+
+If the object also needs manual arguments, pass them as the second parameter:
+
+```gdscript
+container.inject(player, [spawn_point, team_id])
+```
+
+The final call will be:
+
+```gdscript
+player.inject_dependencies(motion, inventory, spawn_point, team_id)
+```
+
+Dependencies from `get_inject_dependencies()` go first. Values from `extra_args` go after them.
+
+One more important detail: after `inject()`, the object is tracked by the container lifecycle. If it has `tick(delta)`, `physics_tick(delta)`, or `dispose()`, they are handled the same way as for objects created through `resolve()`.
+
+If the script has `get_inject_dependencies()`, but the object does not have `inject_dependencies(...)`, Arca reports an error. This is intentional: the container knows the object wants dependencies, but has no method to pass them into.
+
 #### with_arguments(...)
 
 `with_arguments(...)` is for constructor arguments that should not be resolved from the container: scene nodes, exported context fields, config values, numbers, strings.
@@ -679,6 +863,47 @@ container.bind(PlayerMotionService)\
 ```
 
 This reads as: bind this service, pass these arguments, make it singleton, create it now.
+
+#### from_instance()
+
+`from_instance()` is for cases where the object already exists and you want to put that exact object into the container.
+
+A common case is a node or service created by the scene, not by the container:
+
+```gdscript
+func install(container: ArcaContainer, ctx) -> void:
+	var player_context = ctx as PlayerContext
+
+	container.bind(PlayerCameraService).from_instance(player_context.camera_service)
+```
+
+After that:
+
+```gdscript
+var camera_service = container.resolve(PlayerCameraService)
+```
+
+returns the same instance that was passed to `from_instance()`.
+
+`from_instance()` always behaves like a singleton. The container will not create another object.
+
+You can bind a child instance as a base script:
+
+```gdscript
+var child_service = ChildService.new()
+
+container.bind(BaseService).from_instance(child_service)
+```
+
+This works if `ChildService` extends `BaseService`.
+
+If the instance does not belong to the script you bind, Arca reports an error:
+
+```gdscript
+container.bind(PlayerService).from_instance(InventoryService.new())
+```
+
+Do not mix `from_instance()` with `with_arguments(...)`, `as_single(...)`, `as_transient(...)`, or factory creation. The instance already exists, so arguments and factory are not used.
 
 #### Factory
 

@@ -9,15 +9,17 @@ const ScopeModes = ArcaScopeModes.ScopeMode
 @export_file("*.gd") var installers_path: Array[String] = []
 
 var container: ArcaContainer = null
+var parent_context: Node = null
 var _runner: ArcaLifecycleRunner = null
 var _is_initialized: bool = false
+var _owns_container: bool = false
 
 func _enter_tree() -> void:
 	_is_initialized = false
 	_setup_container()
 
 func _exit_tree() -> void:
-	if container != null:
+	if _owns_container and container != null:
 		container.dispose()
 
 	if _runner != null and is_instance_valid(_runner):
@@ -25,10 +27,13 @@ func _exit_tree() -> void:
 
 	_runner = null
 	container = null
+	parent_context = null
+	_owns_container = false
 
 func _setup_container() -> void:
-	var parent_container = _get_parent_container()
-	var has_own_container: bool = false;
+	parent_context = _get_parent_context()
+	var parent_container = _get_context_container(parent_context)
+	_owns_container = false
 
 	match scope_mode:
 		ScopeModes.INHERITED:
@@ -38,25 +43,32 @@ func _setup_container() -> void:
 			_runner.name = "%sLifecycleRunner" % name
 			add_child(_runner)
 
-			container = ArcaContainer.new(_runner)
-			has_own_container = true
+			container = ArcaContainer.new(_runner, parent_container)
+			_owns_container = true
 
-	if has_own_container and not _is_initialized:
+	if _owns_container and not _is_initialized:
 		_install_when_needed()
 		_is_initialized = true
 
-func _get_parent_container() -> ArcaContainer:
+func _get_parent_context() -> Node:
 	var current_node = get_parent()
 	while current_node != null:
 		if current_node is ArcaNodeContext:
-			var parent_context = current_node as ArcaNodeContext
-			if parent_context.container != null:
-				return parent_context.container
+			return current_node
 
 		if current_node == get_tree().root:
-			return ArcaProjectContextNode.container
+			return ArcaProjectContextNode
 
 		current_node = current_node.get_parent()
+	return null
+
+func _get_context_container(context: Node) -> ArcaContainer:
+	if context is ArcaNodeContext:
+		return (context as ArcaNodeContext).container
+
+	if context is ArcaProjectContext:
+		return (context as ArcaProjectContext).container
+
 	return null
 
 func _install_when_needed() -> void:

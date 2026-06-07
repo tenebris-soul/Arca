@@ -21,6 +21,10 @@ func set_factory(factory: Callable) -> void:
 
 func set_args(args) -> void:
     _args = args
+
+func set_instance(instance: Variant) -> void:
+    _instance = instance
+    _has_cached_instance = true
                 
 func get_instance(container: ArcaContainer) -> Variant:
     match _lifetime:
@@ -35,6 +39,8 @@ func get_instance(container: ArcaContainer) -> Variant:
             return _create(container)
         _:
             return null
+
+
             
 func _create(container: ArcaContainer) -> Variant:
     if _factory.is_valid():

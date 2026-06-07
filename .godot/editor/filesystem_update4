@@ -1,8 +1,1 @@
-res://addons/arca/runtime/context/arca_node_context.gd
-res://addons/arca/runtime/context/arca_project_context.gd
-res://addons/arca/runtime/installers/arca_global_installer.gd
-res://addons/arca/tests/fixtures/test_global_installer.gd
-res://addons/arca/runtime/installers/arca_installer.gd
-res://addons/arca/runtime/lifecycle/arca_lifecycle_runner.gd
 res://addons/arca/runtime/container/arca_container.gd
-res://addons/arca/tests/full_addon_test_runner.gd

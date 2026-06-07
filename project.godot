@@ -14,13 +14,10 @@ config/name="ArcaContainer"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
-[arca]
-
-project/global_installers=["uid://cdqy2kj0vfnqd"]
-
 [autoload]
 
 ArcaProjectContextNode="*uid://c82hnghu0yubg"
+_fennara_game_capture="*res://addons/fennara/runtime/game_capture_helper.gd"
 
 [editor_plugins]
 

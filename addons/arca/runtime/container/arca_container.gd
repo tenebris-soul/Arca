@@ -9,9 +9,11 @@ var _instances: Array[Object] = []
 var _resolve_stack: Array[Script] = []
 
 var _runner: ArcaLifecycleRunner
+var _parent: ArcaContainer
 
-func _init(runner: ArcaLifecycleRunner = null) -> void:
+func _init(runner: ArcaLifecycleRunner = null, parent: ArcaContainer = null) -> void:
 	_runner = runner
+	_parent = parent
 
 func bind(concrete: Script) -> ArcaBindingBuilder:
 	var binding = ArcaBinding.new()
@@ -26,6 +28,9 @@ func resolve(concrete: Script) -> Variant:
 
 	var binding = _container.get(concrete)
 	if binding == null:
+		if _parent != null:
+			return _parent.resolve(concrete)
+
 		push_error("ArcaContainer: Type is not bound: %s" % concrete)
 		return null
 
@@ -63,6 +68,35 @@ func dispose() -> void:
 			_runner.remove(instance)
 
 	_instances.clear()
+
+func inject(instance: Object, extra_args: Array = []) -> Object:
+	if instance == null:
+		push_error("ArcaContainer: Cannot inject null instance.")
+		return null
+
+	var script := instance.get_script()
+	if script == null:
+		push_error("ArcaContainer: Cannot inject object without script.")
+		return instance
+
+	var deps := []
+
+	if script.has_method("get_inject_dependencies"):
+		for dep in script.get_inject_dependencies():
+			deps.append(resolve(dep))
+
+	if instance.has_method("inject_dependencies"):
+		instance.callv("inject_dependencies", deps + extra_args)
+	elif deps.size() > 0:
+		push_error("ArcaContainer: Object has inject dependencies, but no inject_dependencies() method.")
+
+	if _runner != null:
+		_runner.add(instance)
+
+	if not _instances.has(instance):
+		_instances.append(instance)
+
+	return instance
 
 ### helpers
 func _format_resolve_stack(repeated: Script) -> String:

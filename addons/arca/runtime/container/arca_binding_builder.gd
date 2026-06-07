@@ -54,6 +54,32 @@ func as_transient(factory: Callable = Callable()) -> ArcaBindingBuilder:
 
 	return self
 
+func from_instance(instance: Object) -> ArcaBindingBuilder:
+	if _lifetime_set:
+		push_error("ArcaBindingBuilder: Lifetime is already set.")
+		return self
+
+	if _arguments_set:
+		push_error("ArcaBindingBuilder: Cannot use arguments with from_instance().")
+		return self
+
+	if instance == null:
+		push_error("ArcaBindingBuilder: Cannot bind null instance.")
+		return self
+
+	if not _script_extends(instance.get_script(), _concrete):
+		push_error(
+			"ArcaBindingBuilder: Cannot bind instance '%s' to concrete '%s'." %
+			[instance.get_script(), _concrete]
+		)
+		return self
+
+	_binding.set_instance(instance)
+	_binding.set_lifetime(Lifetimes.SINGLETON)
+
+	_lifetime_set = true
+	return self
+
 func non_lazy() -> ArcaBindingBuilder:
 	if _non_lazy_set:
 		push_error("ArcaBindingBuilder: NonLazy is already set!")
@@ -78,3 +104,14 @@ func _make_default_factory() -> Callable:
 
 	return func():
 		return _concrete.new.callv(_binding._args)
+
+func _script_extends(script: Script, base_script: Script) -> bool:
+	var current := script
+
+	while current != null:
+		if current == base_script:
+			return true
+
+		current = current.get_base_script()
+
+	return false

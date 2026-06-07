@@ -1,0 +1,10 @@
+Arca from_instance tests
+PASS: resolve returns the exact instance passed to from_instance
+PASS: from_instance preserves existing instance state
+PASS: from_instance behaves as singleton
+PASS: from_instance never creates another instance
+PASS: child script instance can be bound to base script
+PASS: resolved base binding keeps child runtime type
+PASS: from_instance rejects unrelated script instances
+PASS: resolved from_instance object is tracked by container
+OK: all from_instance tests passed.
