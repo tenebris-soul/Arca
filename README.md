@@ -124,10 +124,32 @@ BattleContext SCOPED
 
 Это удобно для вложенных сцен. Например, `Player` может быть отдельной сценой, но использовать сервисы боя, а не создавать свой контейнер.
 
+Если у inherited context-а указаны `installers_path`, они тоже будут запущены. Но важно понимать, куда попадут bindings: не в отдельный контейнер `PlayerContext`, а прямо в унаследованный контейнер родителя.
+
+То есть в такой структуре:
+
+```text
+BattleContext SCOPED
+  PlayerContext INHERITED
+```
+
+installer у `PlayerContext` будет вызываться с контейнером `BattleContext`.
+
+Это полезно, когда дочерняя сцена хочет добавить свои bindings в общий scope родителя:
+
+```gdscript
+func install(container: ArcaContainer, ctx) -> void:
+	container.bind(PlayerAttackService).as_single()
+```
+
+После этого `PlayerAttackService` живет в контейнере боя, потому что `PlayerContext` только унаследовал этот контейнер.
+
+С этим нужно быть аккуратным для повторяющихся сцен. Если два inherited context-а забиндят один и тот же script в один parent container, последний binding перезапишет предыдущий.
+
 Коротко:
 
 - `SCOPED` - эта сцена создает свой DI-мир;
-- `INHERITED` - эта сцена подключается к DI-миру родителя.
+- `INHERITED` - эта сцена подключается к DI-миру родителя и может добавить bindings в этот родительский контейнер.
 
 Если родительского `ArcaNodeContext` нет, inherited context возьмет контейнер проекта.
 
@@ -162,8 +184,12 @@ func install(container: ArcaContainer, ctx) -> void:
 
 1. выбирает контейнер по `scope_mode`;
 2. создает lifecycle runner, если scope свой;
-3. запускает installers;
+3. запускает installers, если container найден;
 4. после этого зависимости можно резолвить.
+
+Для `SCOPED` installers пишут в новый локальный контейнер context-а.
+
+Для `INHERITED` installers пишут в уже существующий контейнер родителя или проекта. Это не локальный scope, а расширение унаследованного scope-а.
 
 ### 3. Примеры использования
 
@@ -602,10 +628,32 @@ BattleContext SCOPED
 
 This is useful for nested scenes. For example, `Player` can be a separate scene while still using battle services instead of creating its own container.
 
+If an inherited context has `installers_path`, those installers are also executed. The important part is where the bindings go: not into a separate `PlayerContext` container, but directly into the inherited parent container.
+
+In this structure:
+
+```text
+BattleContext SCOPED
+  PlayerContext INHERITED
+```
+
+the installer on `PlayerContext` receives the `BattleContext` container.
+
+This is useful when a child scene wants to add its bindings to the shared parent scope:
+
+```gdscript
+func install(container: ArcaContainer, ctx) -> void:
+	container.bind(PlayerAttackService).as_single()
+```
+
+After this, `PlayerAttackService` lives in the battle container, because `PlayerContext` only inherited that container.
+
+Be careful with repeated scenes. If two inherited contexts bind the same script into the same parent container, the last binding overwrites the previous one.
+
 In short:
 
 - `SCOPED` - this scene creates its own DI world;
-- `INHERITED` - this scene joins the parent DI world.
+- `INHERITED` - this scene joins the parent DI world and can add bindings into that parent container.
 
 If there is no parent `ArcaNodeContext`, an inherited context uses the project container.
 
@@ -640,8 +688,12 @@ When `ArcaNodeContext` enters the tree, it:
 
 1. chooses a container based on `scope_mode`;
 2. creates a lifecycle runner if it owns the scope;
-3. runs installers;
+3. runs installers if a container was found;
 4. makes dependencies available for resolving.
+
+For `SCOPED`, installers write into the new local context container.
+
+For `INHERITED`, installers write into the existing parent or project container. This is not a local scope; it extends the inherited scope.
 
 ### 3. Usage Examples
 
