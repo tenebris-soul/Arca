@@ -39,8 +39,6 @@ func get_instance(container: ArcaContainer) -> Variant:
             return _create(container)
         _:
             return null
-
-
             
 func _create(container: ArcaContainer) -> Variant:
     if _factory.is_valid():

@@ -38,6 +38,7 @@ func _setup_container() -> void:
 	match scope_mode:
 		ScopeModes.INHERITED:
 			container = parent_container
+			_owns_container = false
 		ScopeModes.SCOPED:
 			_runner = ArcaLifecycleRunner.new()
 			_runner.name = "%sLifecycleRunner" % name
@@ -46,7 +47,7 @@ func _setup_container() -> void:
 			container = ArcaContainer.new(_runner, parent_container)
 			_owns_container = true
 
-	if _owns_container and not _is_initialized:
+	if container != null and not _is_initialized:
 		_install_when_needed()
 		_is_initialized = true
 
