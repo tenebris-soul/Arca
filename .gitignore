@@ -1,0 +1,5 @@
+# Local distribution archive
+/ASSET STORE/
+
+# Addon test scenes and fixtures
+**/tests/
